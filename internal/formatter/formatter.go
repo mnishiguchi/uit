@@ -224,7 +224,7 @@ func ListGitFilesUnder(dir string) ([]string, error) {
 	}
 
 	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
-	var files []string
+	files := make([]string, 0, len(lines))
 	for _, line := range lines {
 		files = append(files, filepath.Join(dir, line))
 	}
