@@ -136,27 +136,43 @@ func RenderFileContent(path string, w io.Writer, showBinary bool, headLines int)
 	}
 	defer file.Close()
 
-	// Print heading and separator
-	// Try to show path relative to Git root if available
+	printFileContentHeader(w, path)
+
+	if err := printFileContentBody(file, w, headLines); err != nil {
+		return err
+	}
+
+	printFileContentFooter(w)
+
+	return nil
+}
+
+func printFileContentHeader(w io.Writer, path string) {
+	// Try to get path relative to Git root if available
 	gitRoot, err := FindGitRoot(path)
 	if err != nil {
 		relPath, relErr := filepath.Rel(".", path)
 		if relErr != nil {
 			relPath = path
 		}
-		fmt.Fprintf(w, "\n/%s:\n", filepath.ToSlash(relPath))
+
+		fmt.Fprintf(w, "/%s:\n", filepath.ToSlash(relPath))
 	} else {
 		relToGitRoot, err := filepath.Rel(gitRoot, path)
 		if err != nil {
 			relToGitRoot = path
 		}
-		fmt.Fprintf(w, "\n/%s:\n", filepath.ToSlash(relToGitRoot))
-	}
-	fmt.Fprintln(w, strings.Repeat("-", 80))
 
-	// Print file content line by line
+		fmt.Fprintf(w, "\n\n/%s:\n", filepath.ToSlash(relToGitRoot))
+	}
+
+	fmt.Fprintln(w, strings.Repeat("-", 80))
+}
+
+func printFileContentBody(file *os.File, w io.Writer, headLines int) error {
 	scanner := bufio.NewScanner(file)
 	lineNum := 1
+
 	for scanner.Scan() {
 		if headLines > 0 && lineNum > headLines {
 			break
@@ -169,8 +185,11 @@ func RenderFileContent(path string, w io.Writer, showBinary bool, headLines int)
 		return fmt.Errorf("error reading file: %w", err)
 	}
 
-	fmt.Fprintln(w)
 	return nil
+}
+
+func printFileContentFooter(w io.Writer) {
+	fmt.Fprintln(w, "\n\n"+strings.Repeat("-", 80))
 }
 
 // FindGitRoot returns the absolute path of the Git repository root for the given path.
@@ -180,6 +199,7 @@ func FindGitRoot(path string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("not a Git repository: %s", path)
 	}
+
 	return strings.TrimSpace(string(output)), nil
 }
 
