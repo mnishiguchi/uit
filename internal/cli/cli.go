@@ -58,7 +58,9 @@ func Run(inputPath string, maxLines int, noTree, noContent bool) error {
 	// Print Git-aware tree structure rooted at given path
 	if !noTree {
 		if err := formatter.RenderGitTree(inputPath, os.Stdout); err == nil {
-			fmt.Println() // spacer if tree was printed
+			// two blank lines after tree if tree was printed
+			fmt.Fprintln(os.Stdout)
+			fmt.Fprintln(os.Stdout)
 		}
 	}
 
