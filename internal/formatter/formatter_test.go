@@ -34,7 +34,7 @@ func TestRenderGitTree(t *testing.T) {
 func TestRenderFileContent(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	t.Run("respects head line limit", func(t *testing.T) {
+	t.Run("renders file with line limit", func(t *testing.T) {
 		textFile := filepath.Join(tmpDir, "sample-head.txt")
 		content := `line 1
 line 2
@@ -56,7 +56,7 @@ line 5`
 		assert.NotContains(t, output, "line 5")
 	})
 
-	t.Run("prints all lines when head is zero", func(t *testing.T) {
+	t.Run("renders full file when no limit", func(t *testing.T) {
 		textFile := filepath.Join(tmpDir, "sample-full.txt")
 		content := `line A
 line B

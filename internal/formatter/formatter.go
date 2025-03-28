@@ -119,7 +119,7 @@ func printChildren(node *TreeNode, prefix string, isLast bool, w io.Writer) {
 }
 
 // RenderFileContent prints the content of a single file to the writer with line numbers.
-func RenderFileContent(path string, w io.Writer, headLines int) error {
+func RenderFileContent(path string, w io.Writer, maxLines int) error {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return fmt.Errorf("failed to resolve absolute path: %w", err)
@@ -140,7 +140,7 @@ func RenderFileContent(path string, w io.Writer, headLines int) error {
 
 	printFileContentHeader(w, path)
 
-	if err := printFileContentBody(file, w, headLines); err != nil {
+	if err := printFileContentBody(file, w, maxLines); err != nil {
 		return err
 	}
 
@@ -171,12 +171,12 @@ func printFileContentHeader(w io.Writer, path string) {
 	fmt.Fprintln(w, strings.Repeat("-", 80))
 }
 
-func printFileContentBody(file *os.File, w io.Writer, headLines int) error {
+func printFileContentBody(file *os.File, w io.Writer, maxLines int) error {
 	scanner := bufio.NewScanner(file)
 	lineNum := 1
 
 	for scanner.Scan() {
-		if headLines > 0 && lineNum > headLines {
+		if maxLines > 0 && lineNum > maxLines {
 			break
 		}
 		fmt.Fprintf(w, "%4d | %s\n", lineNum, scanner.Text())

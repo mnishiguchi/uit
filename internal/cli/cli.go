@@ -13,7 +13,7 @@ import (
 type Config struct {
 	Path       string
 	ShowBinary bool
-	HeadLines  int
+	MaxLines   int
 	NoTree     bool
 	NoContent  bool
 }
@@ -32,7 +32,7 @@ func NewApp(version string) *cli.App {
 		},
 		Flags: []cli.Flag{
 			&cli.IntFlag{
-				Name:  "head",
+				Name:  "max-lines",
 				Usage: "limit the number of lines printed per file",
 			},
 			&cli.BoolFlag{
@@ -50,7 +50,7 @@ func NewApp(version string) *cli.App {
 				Path:      ".",
 				NoTree:    c.Bool("no-tree"),
 				NoContent: c.Bool("no-content"),
-				HeadLines: c.Int("head"),
+				MaxLines:  c.Int("max-lines"),
 			}
 
 			// Use argument as path if provided
@@ -94,13 +94,13 @@ func Run(cfg Config) error {
 		}
 
 		for _, f := range files {
-			if err := formatter.RenderFileContent(f, os.Stdout, cfg.HeadLines); err != nil {
+			if err := formatter.RenderFileContent(f, os.Stdout, cfg.MaxLines); err != nil {
 				return fmt.Errorf("failed to render file %s: %w", f, err)
 			}
 		}
 	} else {
 		// Render a single file
-		if err := formatter.RenderFileContent(cfg.Path, os.Stdout, cfg.HeadLines); err != nil {
+		if err := formatter.RenderFileContent(cfg.Path, os.Stdout, cfg.MaxLines); err != nil {
 			return fmt.Errorf("failed to render file %s: %w", cfg.Path, err)
 		}
 	}
