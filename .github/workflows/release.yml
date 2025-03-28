@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - '*'
+      - 'v*'  # Match tags like v2025.03.28
 
 jobs:
   release:
@@ -46,9 +46,23 @@ jobs:
                 ./cmd/uit
           done
 
+      - name: Compress binaries
+        run: |
+          mkdir -p dist/archives
+          for f in dist/uit-*; do
+            [ -f "$f" ] || continue  # Skip if no files matched
+            name=$(basename "$f")
+            platform=${name#uit-}
+            mkdir -p dist/tmp/$platform
+            cp "$f" dist/tmp/$platform/uit
+            cp README.md dist/tmp/$platform/
+            tar -czf dist/archives/uit-$platform.tar.gz -C dist/tmp/$platform uit README.md
+          done
+
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
           name: "Release ${{ env.VERSION }}"
-          files: dist/uit-*
+          files: dist/archives/*.tar.gz
+
 
