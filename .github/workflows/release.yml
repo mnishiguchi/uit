@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  release:
+    name: Build & Upload Release
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # Required to create release and upload assets
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Set VERSION from tag
+        id: vars
+        run: echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+      - name: Build for release targets
+        run: |
+          mkdir -p dist
+
+          platforms=(
+            "linux amd64"
+            "linux arm64"
+            "darwin amd64"
+            "darwin arm64"
+          )
+
+          for platform in "${platforms[@]}"; do
+            set -- $platform
+            GOOS=$1 GOARCH=$2 \
+              go build \
+                -ldflags="-s -w -X main.version=$VERSION" \
+                -o dist/uit-$GOOS-$GOARCH \
+                ./cmd/uit
+          done
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Release ${{ env.VERSION }}"
+          files: dist/uit-*
+
