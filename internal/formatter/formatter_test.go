@@ -34,28 +34,6 @@ func TestRenderGitTree(t *testing.T) {
 func TestRenderFileContent(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	t.Run("skips binary by default", func(t *testing.T) {
-		binaryFile := filepath.Join(tmpDir, "binary.dat")
-		err := os.WriteFile(binaryFile, []byte{0x00, 0x01, 0x02, 0xFF}, 0644)
-		assert.NoError(t, err)
-
-		var buf bytes.Buffer
-		err = formatter.RenderFileContent(binaryFile, &buf, false, 0)
-		assert.NoError(t, err)
-		assert.Empty(t, buf.String(), "binary output should be empty by default")
-	})
-
-	t.Run("shows binary if flag is true", func(t *testing.T) {
-		binaryFile := filepath.Join(tmpDir, "binary-show.dat")
-		err := os.WriteFile(binaryFile, []byte{0x00, 0x01, 0x02, 0xFF}, 0644)
-		assert.NoError(t, err)
-
-		var buf bytes.Buffer
-		err = formatter.RenderFileContent(binaryFile, &buf, true, 0)
-		assert.NoError(t, err)
-		assert.Contains(t, buf.String(), "/binary-show.dat")
-	})
-
 	t.Run("respects head line limit", func(t *testing.T) {
 		textFile := filepath.Join(tmpDir, "sample-head.txt")
 		content := `line 1
@@ -67,7 +45,7 @@ line 5`
 		assert.NoError(t, err)
 
 		var buf bytes.Buffer
-		err = formatter.RenderFileContent(textFile, &buf, false, 3)
+		err = formatter.RenderFileContent(textFile, &buf, 3)
 		assert.NoError(t, err)
 
 		output := buf.String()
@@ -87,7 +65,7 @@ line C`
 		assert.NoError(t, err)
 
 		var buf bytes.Buffer
-		err = formatter.RenderFileContent(textFile, &buf, false, 0)
+		err = formatter.RenderFileContent(textFile, &buf, 0)
 		assert.NoError(t, err)
 
 		output := buf.String()

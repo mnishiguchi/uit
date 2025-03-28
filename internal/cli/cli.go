@@ -31,11 +31,6 @@ func NewApp(version string) *cli.App {
 			},
 		},
 		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:  "show-binary",
-				Usage: "show binary file contents",
-				Value: false,
-			},
 			&cli.IntFlag{
 				Name:  "head",
 				Usage: "limit the number of lines printed per file",
@@ -52,11 +47,10 @@ func NewApp(version string) *cli.App {
 		Action: func(c *cli.Context) error {
 			// Parse CLI flags into config.
 			cfg := Config{
-				Path:       ".",
-				ShowBinary: c.Bool("show-binary"),
-				NoTree:     c.Bool("no-tree"),
-				NoContent:  c.Bool("no-content"),
-				HeadLines:  c.Int("head"),
+				Path:      ".",
+				NoTree:    c.Bool("no-tree"),
+				NoContent: c.Bool("no-content"),
+				HeadLines: c.Int("head"),
 			}
 
 			// Use argument as path if provided
@@ -100,13 +94,13 @@ func Run(cfg Config) error {
 		}
 
 		for _, f := range files {
-			if err := formatter.RenderFileContent(f, os.Stdout, cfg.ShowBinary, cfg.HeadLines); err != nil {
+			if err := formatter.RenderFileContent(f, os.Stdout, cfg.HeadLines); err != nil {
 				return fmt.Errorf("failed to render file %s: %w", f, err)
 			}
 		}
 	} else {
 		// Render a single file
-		if err := formatter.RenderFileContent(cfg.Path, os.Stdout, cfg.ShowBinary, cfg.HeadLines); err != nil {
+		if err := formatter.RenderFileContent(cfg.Path, os.Stdout, cfg.HeadLines); err != nil {
 			return fmt.Errorf("failed to render file %s: %w", cfg.Path, err)
 		}
 	}

@@ -119,14 +119,16 @@ func printChildren(node *TreeNode, prefix string, isLast bool, w io.Writer) {
 }
 
 // RenderFileContent prints the content of a single file to the writer with line numbers.
-func RenderFileContent(path string, w io.Writer, showBinary bool, headLines int) error {
+func RenderFileContent(path string, w io.Writer, headLines int) error {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return fmt.Errorf("failed to resolve absolute path: %w", err)
 	}
 
-	// Skip binary files unless explicitly allowed
-	if isBin, err := isBinary(absPath); err == nil && isBin && !showBinary {
+	if isBin, err := isBinary(absPath); err == nil && isBin {
+		printFileContentHeader(w, path)
+		fmt.Fprintln(w, "[binary file omitted]")
+		printFileContentFooter(w)
 		return nil
 	}
 
