@@ -9,15 +9,6 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// Config holds CLI options.
-type Config struct {
-	Path       string
-	ShowBinary bool
-	MaxLines   int
-	NoTree     bool
-	NoContent  bool
-}
-
 // NewApp returns a CLI app instance for uit.
 func NewApp(version string) *cli.App {
 	return &cli.App{
@@ -45,63 +36,62 @@ func NewApp(version string) *cli.App {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			// Parse CLI flags into config.
-			cfg := Config{
-				Path:      ".",
-				NoTree:    c.Bool("no-tree"),
-				NoContent: c.Bool("no-content"),
-				MaxLines:  c.Int("max-lines"),
-			}
+			inputPath := "."
 
 			// Use argument as path if provided
 			if c.Args().Len() > 0 {
-				cfg.Path = c.Args().First()
+				inputPath = c.Args().First()
 			}
 
-			return Run(cfg)
+			return Run(
+				inputPath,
+				c.Int("max-lines"),
+				c.Bool("no-tree"),
+				c.Bool("no-content"),
+			)
 		},
 	}
 }
 
 // Run executes the main logic using the given config.
-func Run(cfg Config) error {
+func Run(inputPath string, maxLines int, noTree, noContent bool) error {
 	// Print Git-aware tree structure rooted at given path
-	if !cfg.NoTree {
-		if err := formatter.RenderGitTree(cfg.Path, os.Stdout); err == nil {
+	if !noTree {
+		if err := formatter.RenderGitTree(inputPath, os.Stdout); err == nil {
 			fmt.Println() // spacer if tree was printed
 		}
 	}
 
 	// Skip file content rendering entirely
-	if cfg.NoContent {
+	if noContent {
 		return nil
 	}
 
 	// Check if the input path is a file or directory
-	info, err := os.Stat(cfg.Path)
+	info, err := os.Stat(inputPath)
 	if err != nil {
 		return fmt.Errorf("invalid path: %w", err)
 	}
 
 	if info.IsDir() {
 		// Render all Git-tracked files under the directory
-		files, err := formatter.ListGitFilesUnder(cfg.Path)
+		files, err := formatter.ListGitFilesUnder(inputPath)
 		if err != nil {
 			if strings.Contains(err.Error(), "not a Git repository") {
-				return fmt.Errorf("this directory is not inside a Git repository: %s", cfg.Path)
+				return fmt.Errorf("this directory is not inside a Git repository: %s", inputPath)
 			}
 			return fmt.Errorf("failed to list files: %w", err)
 		}
 
 		for _, f := range files {
-			if err := formatter.RenderFileContent(f, os.Stdout, cfg.MaxLines); err != nil {
+			if err := formatter.RenderFileContent(f, os.Stdout, maxLines); err != nil {
 				return fmt.Errorf("failed to render file %s: %w", f, err)
 			}
 		}
 	} else {
 		// Render a single file
-		if err := formatter.RenderFileContent(cfg.Path, os.Stdout, cfg.MaxLines); err != nil {
-			return fmt.Errorf("failed to render file %s: %w", cfg.Path, err)
+		if err := formatter.RenderFileContent(inputPath, os.Stdout, maxLines); err != nil {
+			return fmt.Errorf("failed to render file %s: %w", inputPath, err)
 		}
 	}
 
