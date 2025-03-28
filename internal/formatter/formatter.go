@@ -20,26 +20,37 @@ type TreeNode struct {
 
 // RenderGitTree builds and prints a Git-tracked file tree starting from the user-specified path.
 func RenderGitTree(inputPath string, w io.Writer) error {
+	tree, err := buildGitTree(inputPath)
+	if err != nil {
+		return err
+	}
+
+	printTree(tree, w)
+
+	return nil
+}
+
+func buildGitTree(inputPath string) (*TreeNode, error) {
 	absInput, err := filepath.Abs(inputPath)
 	if err != nil {
-		return fmt.Errorf("failed to resolve input path: %w", err)
+		return nil, fmt.Errorf("failed to resolve input path: %w", err)
 	}
 
 	gitRoot, err := FindGitRoot(absInput)
 	if err != nil {
-		return fmt.Errorf("failed to find git root: %w", err)
+		return nil, fmt.Errorf("failed to find git root: %w", err)
 	}
 
 	cmd := exec.Command("git", "-C", gitRoot, "ls-files")
 	output, err := cmd.Output()
 	if err != nil {
-		return fmt.Errorf("failed to run git ls-files: %w", err)
+		return nil, fmt.Errorf("failed to run git ls-files: %w", err)
 	}
 	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
 
 	relInputPath, err := filepath.Rel(gitRoot, absInput)
 	if err != nil {
-		return fmt.Errorf("failed to get relative input path: %w", err)
+		return nil, fmt.Errorf("failed to get relative input path: %w", err)
 	}
 
 	var relevantPaths [][]string
@@ -50,18 +61,17 @@ func RenderGitTree(inputPath string, w io.Writer) error {
 		}
 	}
 
-	tree := &TreeNode{
+	root := &TreeNode{
 		Name:     filepath.Base(absInput),
 		IsFile:   false,
 		Children: make(map[string]*TreeNode),
 	}
 
 	for _, parts := range relevantPaths {
-		addPath(tree, parts)
+		addPath(root, parts)
 	}
 
-	printTree(tree, w)
-	return nil
+	return root, nil
 }
 
 // addPath inserts a file path (split into parts) into the tree recursively.
