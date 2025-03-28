@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/mnishiguchi/command-line-go/uit/internal/formatter"
 	"github.com/urfave/cli/v2"
@@ -92,6 +93,9 @@ func Run(cfg Config) error {
 		// Render all Git-tracked files under the directory
 		files, err := formatter.ListGitFilesUnder(cfg.Path)
 		if err != nil {
+			if strings.Contains(err.Error(), "not a Git repository") {
+				return fmt.Errorf("this directory is not inside a Git repository: %s", cfg.Path)
+			}
 			return fmt.Errorf("failed to list files: %w", err)
 		}
 
