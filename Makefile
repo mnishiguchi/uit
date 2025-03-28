@@ -1,11 +1,14 @@
 APP_NAME := uit
 VERSION := v$(shell date +%Y.%m.%d)
 DIST := dist
+ARCHIVES := $(DIST)/archives
 BINARIES := \
 	$(DIST)/$(APP_NAME)-linux-amd64 \
 	$(DIST)/$(APP_NAME)-linux-arm64 \
 	$(DIST)/$(APP_NAME)-darwin-amd64 \
 	$(DIST)/$(APP_NAME)-darwin-arm64
+
+PLATFORMS := linux-amd64 linux-arm64 darwin-amd64 darwin-arm64
 
 all: release
 
@@ -16,17 +19,21 @@ clean:
 
 build:
 	@echo "Building release for version $(VERSION)..."
-	GOOS=linux  GOARCH=amd64 go build -o $(DIST)/$(APP_NAME)-linux-amd64 ./cmd/$(APP_NAME)
-	GOOS=linux  GOARCH=arm64 go build -o $(DIST)/$(APP_NAME)-linux-arm64 ./cmd/$(APP_NAME)
-	GOOS=darwin GOARCH=amd64 go build -o $(DIST)/$(APP_NAME)-darwin-amd64 ./cmd/$(APP_NAME)
-	GOOS=darwin GOARCH=arm64 go build -o $(DIST)/$(APP_NAME)-darwin-arm64 ./cmd/$(APP_NAME)
+	@mkdir -p $(DIST)
+	@for platform in $(PLATFORMS); do \
+		GOOS=$${platform%-*} GOARCH=$${platform#*-} \
+		go build -o $(DIST)/$(APP_NAME)-$$platform ./cmd/$(APP_NAME); \
+	done
 
 package:
 	@echo "Packaging binaries..."
-	mkdir -p $(DIST)/archives
-	for f in $(BINARIES); do \
-		name=$$(basename $$f); \
-		tar -czf $(DIST)/archives/$$name.tar.gz -C $(DIST) $$name; \
+	@mkdir -p $(ARCHIVES)
+	@for f in $(BINARIES); do \
+		platform=$$(basename $$f | sed "s/$(APP_NAME)-//"); \
+		mkdir -p $(DIST)/tmp/$$platform; \
+		cp $$f $(DIST)/tmp/$$platform/$(APP_NAME); \
+		tar -czf $(ARCHIVES)/$(APP_NAME)-$$platform.tar.gz -C $(DIST)/tmp/$$platform $(APP_NAME); \
+		rm -rf $(DIST)/tmp/$$platform; \
 	done
 
 changelog:
@@ -37,4 +44,5 @@ github-release:
 	gh release create $(VERSION) \
 		--title "$(VERSION)" \
 		--notes "$$(make changelog)" \
-		$(DIST)/archives/*.tar.gz
+		$(ARCHIVES)/*.tar.gz
+
