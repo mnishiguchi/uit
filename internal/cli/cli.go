@@ -1,10 +1,12 @@
 package cli
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/atotto/clipboard"
 	"github.com/mnishiguchi/command-line-go/uit/internal/formatter"
 	"github.com/urfave/cli/v2"
 )
@@ -34,6 +36,10 @@ func NewApp(version string) *cli.App {
 				Name:  "no-content",
 				Usage: "do not render file contents",
 			},
+			&cli.BoolFlag{
+				Name:  "copy",
+				Usage: "copy output to clipboard instead of printing",
+			},
 		},
 		Action: func(c *cli.Context) error {
 			inputPath := "."
@@ -48,25 +54,29 @@ func NewApp(version string) *cli.App {
 				c.Int("max-lines"),
 				c.Bool("no-tree"),
 				c.Bool("no-content"),
+				c.Bool("copy"),
 			)
 		},
 	}
 }
 
 // Run executes the main logic using the given config.
-func Run(inputPath string, maxLines int, noTree, noContent bool) error {
+func Run(inputPath string, maxLines int, noTree, noContent, copyToClipboard bool) error {
+	var buf bytes.Buffer
+	out := &buf
+
 	// Print Git-aware tree structure rooted at given path
 	if !noTree {
-		if err := formatter.RenderGitTree(inputPath, os.Stdout); err == nil {
+		if err := formatter.RenderGitTree(inputPath, out); err == nil {
 			// two blank lines after tree if tree was printed
-			fmt.Fprintln(os.Stdout)
-			fmt.Fprintln(os.Stdout)
+			fmt.Fprintln(out)
+			fmt.Fprintln(out)
 		}
 	}
 
 	// Skip file content rendering entirely
 	if noContent {
-		return nil
+		return outputResult(buf, copyToClipboard)
 	}
 
 	// Check if the input path is a file or directory
@@ -86,16 +96,33 @@ func Run(inputPath string, maxLines int, noTree, noContent bool) error {
 		}
 
 		for _, f := range files {
-			if err := formatter.RenderFileContent(f, os.Stdout, maxLines); err != nil {
+			if err := formatter.RenderFileContent(f, out, maxLines); err != nil {
 				return fmt.Errorf("failed to render file %s: %w", f, err)
 			}
 		}
 	} else {
 		// Render a single file
-		if err := formatter.RenderFileContent(inputPath, os.Stdout, maxLines); err != nil {
+		if err := formatter.RenderFileContent(inputPath, out, maxLines); err != nil {
 			return fmt.Errorf("failed to render file %s: %w", inputPath, err)
 		}
 	}
+
+	return outputResult(buf, copyToClipboard)
+}
+
+// outputResult handles writing the final output, either to stdout or clipboard.
+func outputResult(buf bytes.Buffer, copyToClipboard bool) error {
+	if copyToClipboard {
+		if err := clipboard.WriteAll(buf.String()); err != nil {
+			return fmt.Errorf("failed to copy to clipboard: %w", err)
+		}
+
+		fmt.Fprintln(os.Stderr, "✔️ Copied to clipboard.")
+
+		return nil
+	}
+
+	fmt.Print(buf.String())
 
 	return nil
 }
