@@ -2,42 +2,28 @@
 
 Render directory tree and file contents from a Git repository.
 
-## Features
-
-- Displays Git-tracked files as a tree
-- Shows file content with line numbers
-- Supports partial output via `--head`
-- Skips binary files by default (override with `--show-binary`)
-- Toggle visibility of tree and contents
-
-## Installation
-
-Download a binary from [Releases](https://github.com/mnishiguchi/uit/releases)  
-or build from source:
-
-```sh
-make release
-```
-
 ## Usage
 
 ```sh
 uit [options] [path]
 ```
 
-### Options
+Use `uit --help` to see available options.
 
-| Option          | Description                           |
-|-----------------|---------------------------------------|
-| `--head N`      | Limit the number of lines per file    |
-| `--show-binary` | Show contents of binary files         |
-| `--no-tree`     | Suppress tree view                    |
-| `--no-content`  | Suppress file content view            |
+## Installation
 
-## Example
+Download a prebuilt binary from the [Releases](https://github.com/mnishiguchi/uit/releases) page.
+
+Or, build from source if you have Go installed:
 
 ```sh
-uit --head 5 ./internal
+go build -o uit ./cmd/uit
+```
+
+You can now run it locally:
+
+```sh
+./uit --help
 ```
 
 ## License
