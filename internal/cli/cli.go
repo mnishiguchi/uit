@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/atotto/clipboard"
@@ -40,6 +41,10 @@ func NewApp(version string) *cli.App {
 				Name:  "copy",
 				Usage: "copy output to clipboard instead of printing",
 			},
+			&cli.BoolFlag{
+				Name:  "fzf",
+				Usage: "interactively select files via fzf (if installed)",
+			},
 		},
 		Action: func(c *cli.Context) error {
 			inputPath := "."
@@ -55,20 +60,21 @@ func NewApp(version string) *cli.App {
 				c.Bool("no-tree"),
 				c.Bool("no-content"),
 				c.Bool("copy"),
+				c.Bool("fzf"),
 			)
 		},
 	}
 }
 
 // Run executes the main logic using the given config.
-func Run(inputPath string, maxLines int, noTree, noContent, copyToClipboard bool) error {
+func Run(inputPath string, maxLines int, noTree, noContent, copyToClipboard, useFZF bool) error {
 	var buf bytes.Buffer
 	out := &buf
 
 	// Print Git-aware tree structure rooted at given path
 	if !noTree {
 		if err := formatter.RenderGitTree(inputPath, out); err == nil {
-			// two blank lines after tree if tree was printed
+			// Two blank lines after tree if tree was printed
 			fmt.Fprintln(out)
 			fmt.Fprintln(out)
 		}
@@ -86,13 +92,21 @@ func Run(inputPath string, maxLines int, noTree, noContent, copyToClipboard bool
 	}
 
 	if info.IsDir() {
-		// Render all Git-tracked files under the directory
+		// List Git-tracked files under the directory
 		files, err := formatter.ListGitFilesUnder(inputPath)
 		if err != nil {
 			if strings.Contains(err.Error(), "not a Git repository") {
 				return fmt.Errorf("this directory is not inside a Git repository: %s", inputPath)
 			}
 			return fmt.Errorf("failed to list files: %w", err)
+		}
+
+		// If --fzf is enabled and fzf is available, let the user interactively select files
+		if useFZF && isFZFInstalled() {
+			files, err = selectFilesWithFZF(files)
+			if err != nil {
+				return err
+			}
 		}
 
 		for _, f := range files {
@@ -116,13 +130,30 @@ func outputResult(buf bytes.Buffer, copyToClipboard bool) error {
 		if err := clipboard.WriteAll(buf.String()); err != nil {
 			return fmt.Errorf("failed to copy to clipboard: %w", err)
 		}
-
 		fmt.Fprintln(os.Stderr, "✔️ Copied to clipboard.")
-
 		return nil
 	}
 
 	fmt.Print(buf.String())
-
 	return nil
+}
+
+// isFZFInstalled checks if fzf is available in PATH.
+func isFZFInstalled() bool {
+	_, err := exec.LookPath("fzf")
+	return err == nil
+}
+
+// selectFilesWithFZF launches fzf with the given list of files and returns selected ones.
+func selectFilesWithFZF(files []string) ([]string, error) {
+	cmd := exec.Command("fzf", "--multi")
+	cmd.Stdin = strings.NewReader(strings.Join(files, "\n"))
+
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("fzf failed: %w", err)
+	}
+
+	selection := strings.Split(strings.TrimSpace(string(out)), "\n")
+	return selection, nil
 }

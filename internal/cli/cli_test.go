@@ -32,6 +32,7 @@ func TestRun(t *testing.T) {
 			true,           // noTree
 			false,          // noContent
 			true,           // copyToClipboard
+			false,          // useFzf
 		)
 		assert.NoError(t, err)
 
