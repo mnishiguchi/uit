@@ -29,6 +29,7 @@ func NewApp(version string) *cli.App {
 			&cli.IntFlag{
 				Name:  "max-lines",
 				Usage: "limit the number of lines printed per file",
+				Value: 500,
 			},
 			&cli.BoolFlag{
 				Name:  "no-tree",
