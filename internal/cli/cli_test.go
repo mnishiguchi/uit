@@ -37,4 +37,3 @@ func TestRun(t *testing.T) {
 		assert.Contains(t, clip, content)
 	})
 }
-
