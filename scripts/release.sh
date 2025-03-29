@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# release.sh — Tag and push a version to trigger GitHub Release
+#
+# Usage:
+#   ./scripts/release.sh vYYYY.MM.DD
+#
+# This script:
+# - Ensures you’re on main branch
+# - Ensures working tree is clean
+# - Shows changelog since last tag
+# - Tags and pushes the release tag
+
 VERSION="${1:-}"
 
 if [[ -z "$VERSION" ]]; then
@@ -8,20 +19,17 @@ if [[ -z "$VERSION" ]]; then
   exit 1
 fi
 
-# Ensure on main branch
 branch=$(git rev-parse --abbrev-ref HEAD)
 if [[ "$branch" != "main" ]]; then
   echo "❌ You must be on 'main' branch (currently on '$branch')"
   exit 1
 fi
 
-# Make sure working tree is clean
 if [[ -n "$(git status --porcelain)" ]]; then
   echo "❌ Working directory is not clean. Commit or stash changes first."
   exit 1
 fi
 
-# Show changelog
 echo "📋 Changelog since last tag:"
 LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
 if [[ -n "$LAST_TAG" ]]; then
@@ -30,7 +38,6 @@ else
   git log --pretty=format:"- %s (%h)"
 fi
 
-# Tag and push
 echo
 echo "🏷️ Tagging version: $VERSION"
 git tag "$VERSION"

@@ -1,8 +1,21 @@
 #!/usr/bin/env bash
 set -e
 
-APP_NAME="$1"
-DIST="$2"
+# build.sh — Build binaries for multiple platforms
+#
+# Usage:
+#   ./scripts/build.sh <app_name> <output_dir> [version]
+#
+# Example:
+#   ./scripts/build.sh uit dist v2025.03.28
+#
+# Arguments:
+#   <app_name>   The name of the binary (e.g., "uit")
+#   <output_dir> Output directory (e.g., "dist")
+#   [version]    Optional version string (default: "dev")
+
+APP_NAME="${1:-uit}"
+DIST="${2:-dist}"
 VERSION="${3:-dev}"
 
 PLATFORMS=(
