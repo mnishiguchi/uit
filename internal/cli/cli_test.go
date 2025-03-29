@@ -1,6 +1,7 @@
 package cli_test
 
 import (
+	"bytes"
 	"os"
 	"testing"
 
@@ -26,6 +27,8 @@ func TestRun(t *testing.T) {
 		assert.NoError(t, err)
 		tmpFile.Close()
 
+		var buf bytes.Buffer
+
 		err = cli.Run(
 			tmpFile.Name(), // inputPath
 			0,              // maxLines
@@ -34,11 +37,13 @@ func TestRun(t *testing.T) {
 			true,           // copyToClipboard
 			false,          // useFzf
 			"",             // filterRegex
+			&buf,
 		)
 		assert.NoError(t, err)
 
 		clip, err := clipboard.ReadAll()
 		assert.NoError(t, err)
 		assert.Contains(t, clip, content)
+		assert.Contains(t, buf.String(), content)
 	})
 }

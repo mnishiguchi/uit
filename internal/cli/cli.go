@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"regexp"
@@ -54,8 +55,6 @@ func NewApp(version string) *cli.App {
 		},
 		Action: func(c *cli.Context) error {
 			inputPath := "."
-
-			// Use argument as path if provided
 			if c.Args().Len() > 0 {
 				inputPath = c.Args().First()
 			}
@@ -68,6 +67,7 @@ func NewApp(version string) *cli.App {
 				c.Bool("copy"),
 				c.Bool("fzf"),
 				c.String("filter"),
+				c.App.Writer,
 			)
 		},
 	}
@@ -82,9 +82,12 @@ func Run(
 	copyToClipboard bool,
 	useFZF bool,
 	filterPattern string,
+	writer io.Writer,
 ) error {
-	var buf bytes.Buffer
-	out := &buf
+	var clipboardBuf bytes.Buffer
+
+	// Multi-writer sends output to both terminal/test and clipboard buffer
+	out := io.MultiWriter(writer, &clipboardBuf)
 
 	// Print Git-aware tree structure rooted at given path
 	if !noTree {
@@ -97,7 +100,7 @@ func Run(
 
 	// Skip file content rendering entirely
 	if noContent {
-		return outputResult(buf, copyToClipboard)
+		return outputResult(clipboardBuf, copyToClipboard)
 	}
 
 	// Check if the input path is a file or directory
@@ -153,7 +156,7 @@ func Run(
 		}
 	}
 
-	return outputResult(buf, copyToClipboard)
+	return outputResult(clipboardBuf, copyToClipboard)
 }
 
 // outputResult handles writing the final output, either to stdout or clipboard.
@@ -163,10 +166,7 @@ func outputResult(buf bytes.Buffer, copyToClipboard bool) error {
 			return fmt.Errorf("failed to copy to clipboard: %w", err)
 		}
 		fmt.Fprintln(os.Stderr, "✔️ Copied to clipboard.")
-		return nil
 	}
-
-	fmt.Print(buf.String())
 	return nil
 }
 
