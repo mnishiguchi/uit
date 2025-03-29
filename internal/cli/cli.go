@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 
 	"github.com/atotto/clipboard"
@@ -45,6 +46,10 @@ func NewApp(version string) *cli.App {
 				Name:  "fzf",
 				Usage: "interactively select files via fzf (if installed)",
 			},
+			&cli.StringFlag{
+				Name:  "filter",
+				Usage: "filter file paths with a regular expression",
+			},
 		},
 		Action: func(c *cli.Context) error {
 			inputPath := "."
@@ -61,13 +66,22 @@ func NewApp(version string) *cli.App {
 				c.Bool("no-content"),
 				c.Bool("copy"),
 				c.Bool("fzf"),
+				c.String("filter"),
 			)
 		},
 	}
 }
 
 // Run executes the main logic using the given config.
-func Run(inputPath string, maxLines int, noTree, noContent, copyToClipboard, useFZF bool) error {
+func Run(
+	inputPath string,
+	maxLines int,
+	noTree bool,
+	noContent bool,
+	copyToClipboard bool,
+	useFZF bool,
+	filterPattern string,
+) error {
 	var buf bytes.Buffer
 	out := &buf
 
@@ -99,6 +113,23 @@ func Run(inputPath string, maxLines int, noTree, noContent, copyToClipboard, use
 				return fmt.Errorf("this directory is not inside a Git repository: %s", inputPath)
 			}
 			return fmt.Errorf("failed to list files: %w", err)
+		}
+
+		// If --filter is provided, filter file paths
+		if filterPattern != "" {
+			re, err := regexp.Compile(filterPattern)
+			if err != nil {
+				return fmt.Errorf("invalid regex pattern: %w", err)
+			}
+
+			var filtered []string
+			for _, f := range files {
+				if re.MatchString(f) {
+					filtered = append(filtered, f)
+				}
+			}
+
+			files = filtered
 		}
 
 		// If --fzf is enabled and fzf is available, let the user interactively select files

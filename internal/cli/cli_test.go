@@ -33,6 +33,7 @@ func TestRun(t *testing.T) {
 			false,          // noContent
 			true,           // copyToClipboard
 			false,          // useFzf
+			"",             // filterRegex
 		)
 		assert.NoError(t, err)
 
