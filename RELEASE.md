@@ -18,7 +18,15 @@ Include:
 - A summary of changes (changelog) in the PR description or commit
 - Any final cleanups before release
 
-Once the PR is approved and merged to `main`, proceed to the next step.
+ Once the PR is approved and merged to `main`, proceed to the next step.
+
+You can optionally create a placeholder release commit (without changes) using:
+
+```sh
+./scripts/empty-release-commit.sh vYYYY.MM.DD
+```
+
+This is useful when you want to reserve a version number or clearly mark the release point.
 
 ---
 
