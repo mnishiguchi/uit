@@ -21,7 +21,7 @@ if [[ -n "$(git status --porcelain)" ]]; then
   exit 1
 fi
 
-# Show changelog (optional)
+# Show changelog
 echo "📋 Changelog since last tag:"
 LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
 if [[ -n "$LAST_TAG" ]]; then
