@@ -119,6 +119,10 @@ func Run(
 			return fmt.Errorf("failed to list files: %w", err)
 		}
 
+		if len(files) == 0 {
+			return fmt.Errorf("no Git-tracked files found in: %s", inputPath)
+		}
+
 		// If --filter is provided, filter file paths
 		if filterPattern != "" {
 			re, err := regexp.Compile(filterPattern)

@@ -2,48 +2,55 @@ package cli_test
 
 import (
 	"bytes"
+	"flag"
 	"os"
+	"path/filepath"
 	"testing"
 
-	"github.com/atotto/clipboard"
 	"github.com/mnishiguchi/command-line-go/uit/internal/cli"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
+var updateGolden = flag.Bool("update", false, "update golden files")
+
 func TestRun(t *testing.T) {
-	t.Run("copies rendered output to clipboard", func(t *testing.T) {
-		// Skip if clipboard isn't supported (e.g. in CI)
-		if err := clipboard.WriteAll("test"); err != nil {
-			t.Skip("Skipping clipboard test: clipboard not available")
-		}
+	t.Run("matches golden output for single file", func(t *testing.T) {
+		inputPath := filepath.Join("testdata", "input", "test-this.txt")
+		goldenPath := filepath.Join("testdata", "golden", "test-this.txt")
 
-		// Create a temporary text file with some content
-		tmpFile, err := os.CreateTemp("", "uit-clipboard-test-*.txt")
-		assert.NoError(t, err)
-		defer os.Remove(tmpFile.Name())
-
-		content := "This is a test for clipboard output."
-		_, err = tmpFile.WriteString(content)
-		assert.NoError(t, err)
-		tmpFile.Close()
+		// Configurable CLI flags
+		maxLines := 500
+		noTree := true
+		noContent := false
+		copyToClipboard := false
+		useFZF := false
+		filter := ""
 
 		var buf bytes.Buffer
 
-		err = cli.Run(
-			tmpFile.Name(), // inputPath
-			0,              // maxLines
-			true,           // noTree
-			false,          // noContent
-			true,           // copyToClipboard
-			false,          // useFzf
-			"",             // filterRegex
+		err := cli.Run(
+			inputPath,
+			maxLines,
+			noTree,
+			noContent,
+			copyToClipboard,
+			useFZF,
+			filter,
 			&buf,
 		)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
-		clip, err := clipboard.ReadAll()
-		assert.NoError(t, err)
-		assert.Contains(t, clip, content)
-		assert.Contains(t, buf.String(), content)
+		actual := buf.String()
+
+		if *updateGolden {
+			err := os.WriteFile(goldenPath, []byte(actual), 0644)
+			require.NoError(t, err)
+		}
+
+		expected, err := os.ReadFile(goldenPath)
+		require.NoError(t, err)
+
+		assert.Equal(t, string(expected), actual)
 	})
 }

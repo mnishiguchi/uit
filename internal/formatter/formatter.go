@@ -135,6 +135,14 @@ func RenderFileContent(path string, w io.Writer, maxLines int) error {
 		return fmt.Errorf("failed to resolve absolute path: %w", err)
 	}
 
+	info, err := os.Stat(absPath)
+	if err != nil {
+		return fmt.Errorf("failed to stat path: %w", err)
+	}
+	if info.IsDir() {
+		return fmt.Errorf("cannot render directory as file: %s", absPath)
+	}
+
 	if isBin, err := isBinary(absPath); err == nil && isBin {
 		printFileContentHeader(w, path)
 		fmt.Fprintln(w, "[binary file omitted]")
@@ -226,6 +234,9 @@ func ListGitFilesUnder(dir string) ([]string, error) {
 	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
 	files := make([]string, 0, len(lines))
 	for _, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			continue // Skip blank lines to avoid treating directory as file
+		}
 		files = append(files, filepath.Join(dir, line))
 	}
 	return files, nil
