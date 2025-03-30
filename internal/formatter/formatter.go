@@ -2,6 +2,7 @@ package formatter
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -242,7 +243,7 @@ func ListGitFilesUnder(dir string) ([]string, error) {
 	return files, nil
 }
 
-// isBinary checks if the file content is likely binary.
+// isBinary returns true if the file contains a null byte in the first 8000 bytes.
 func isBinary(path string) (bool, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -252,16 +253,11 @@ func isBinary(path string) (bool, error) {
 
 	const maxBytes = 8000
 	buf := make([]byte, maxBytes)
+
 	n, err := file.Read(buf)
 	if err != nil && err != io.EOF {
 		return false, err
 	}
 
-	for i := 0; i < n; i++ {
-		if buf[i] == 0 {
-			return true, nil
-		}
-	}
-
-	return false, nil
+	return bytes.IndexByte(buf[:n], 0) >= 0, nil
 }
