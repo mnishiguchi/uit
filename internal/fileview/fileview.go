@@ -12,8 +12,8 @@ import (
 	"github.com/mnishiguchi/command-line-go/uit/internal/gitutil"
 )
 
-// RenderFileContent prints the content of a single file to the writer with line numbers.
-func RenderFileContent(path string, w io.Writer, maxLines int) error {
+// FileViewWithLines prints the content of a single file to the writer with line numbers.
+func FileViewWithLines(path string, w io.Writer, maxLines int) error {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return fmt.Errorf("failed to resolve absolute path: %w", err)
@@ -27,10 +27,10 @@ func RenderFileContent(path string, w io.Writer, maxLines int) error {
 		return fmt.Errorf("cannot render directory as file: %s", absPath)
 	}
 
-	if isBin, err := isBinary(absPath); err == nil && isBin {
-		printFileContentHeader(w, path)
+	if isBin, err := isBinaryFile(absPath); err == nil && isBin {
+		printFileHeader(w, path)
 		fmt.Fprintln(w, "[binary file omitted]")
-		printFileContentFooter(w)
+		printFileFooter(w)
 		return nil
 	}
 
@@ -40,20 +40,20 @@ func RenderFileContent(path string, w io.Writer, maxLines int) error {
 	}
 	defer file.Close()
 
-	printFileContentHeader(w, path)
+	printFileHeader(w, path)
 
-	if err := printFileContentBody(file, w, maxLines); err != nil {
+	if err := printFileBodyWithLines(file, w, maxLines); err != nil {
 		return err
 	}
 
-	printFileContentFooter(w)
+	printFileFooter(w)
 
 	return nil
 }
 
-func printFileContentHeader(w io.Writer, path string) {
+func printFileHeader(w io.Writer, path string) {
 	// Try to get path relative to Git root if available
-	gitRoot, err := gitutil.FindGitRoot(path)
+	gitRoot, err := gitutil.GetGitRoot(path)
 	if err != nil {
 		relPath, relErr := filepath.Rel(".", path)
 		if relErr != nil {
@@ -73,7 +73,7 @@ func printFileContentHeader(w io.Writer, path string) {
 	fmt.Fprintln(w, strings.Repeat("-", 80))
 }
 
-func printFileContentBody(file *os.File, w io.Writer, maxLines int) error {
+func printFileBodyWithLines(file *os.File, w io.Writer, maxLines int) error {
 	scanner := bufio.NewScanner(file)
 	lineNum := 1
 
@@ -92,12 +92,12 @@ func printFileContentBody(file *os.File, w io.Writer, maxLines int) error {
 	return nil
 }
 
-func printFileContentFooter(w io.Writer) {
+func printFileFooter(w io.Writer) {
 	fmt.Fprintln(w, "\n\n"+strings.Repeat("-", 80))
 }
 
-// isBinary returns true if the file contains a null byte in the first 8000 bytes.
-func isBinary(path string) (bool, error) {
+// isBinaryFile returns true if the file contains a null byte in the first 8000 bytes.
+func isBinaryFile(path string) (bool, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return false, err

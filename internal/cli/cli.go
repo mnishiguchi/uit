@@ -93,7 +93,7 @@ func Run(
 
 	// Print Git-aware tree structure rooted at given path
 	if !noTree {
-		if err := treeview.RenderGitTree(inputPath, out); err == nil {
+		if err := treeview.TreeViewFromGit(inputPath, out); err == nil {
 			// Two blank lines after tree if tree was printed
 			fmt.Fprintln(out)
 			fmt.Fprintln(out)
@@ -113,7 +113,7 @@ func Run(
 
 	if info.IsDir() {
 		// List Git-tracked files under the directory
-		files, err := gitutil.ListGitFilesUnder(inputPath)
+		files, err := gitutil.ListGitTrackedFiles(inputPath)
 		if err != nil {
 			if strings.Contains(err.Error(), "not a Git repository") {
 				return fmt.Errorf("this directory is not inside a Git repository: %s", inputPath)
@@ -151,13 +151,13 @@ func Run(
 		}
 
 		for _, f := range files {
-			if err := fileview.RenderFileContent(f, out, maxLines); err != nil {
+			if err := fileview.FileViewWithLines(f, out, maxLines); err != nil {
 				return fmt.Errorf("failed to render file %s: %w", f, err)
 			}
 		}
 	} else {
 		// Render a single file
-		if err := fileview.RenderFileContent(inputPath, out, maxLines); err != nil {
+		if err := fileview.FileViewWithLines(inputPath, out, maxLines); err != nil {
 			return fmt.Errorf("failed to render file %s: %w", inputPath, err)
 		}
 	}

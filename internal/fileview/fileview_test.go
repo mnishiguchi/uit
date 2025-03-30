@@ -19,7 +19,7 @@ func TestRenderGitTree(t *testing.T) {
 		cwd, err := os.Getwd()
 		assert.NoError(t, err)
 
-		err = treeview.RenderGitTree(cwd, &buf)
+		err = treeview.TreeViewFromGit(cwd, &buf)
 		assert.NoError(t, err)
 
 		output := buf.String()
@@ -48,7 +48,7 @@ line 5`
 		assert.NoError(t, err)
 
 		var buf bytes.Buffer
-		err = fileview.RenderFileContent(textFile, &buf, 3)
+		err = fileview.FileViewWithLines(textFile, &buf, 3)
 		assert.NoError(t, err)
 
 		output := buf.String()
@@ -69,7 +69,7 @@ line C`
 		assert.NoError(t, err)
 
 		var buf bytes.Buffer
-		err = fileview.RenderFileContent(textFile, &buf, 0)
+		err = fileview.FileViewWithLines(textFile, &buf, 0)
 		assert.NoError(t, err)
 
 		output := buf.String()
@@ -82,7 +82,7 @@ line C`
 func TestFindGitRoot(t *testing.T) {
 	t.Run("returns error for non-Git directory", func(t *testing.T) {
 		tmp := t.TempDir()
-		_, err := gitutil.FindGitRoot(tmp)
+		_, err := gitutil.GetGitRoot(tmp)
 		assert.Error(t, err)
 	})
 }
@@ -90,7 +90,7 @@ func TestFindGitRoot(t *testing.T) {
 func TestListGitFilesUnder(t *testing.T) {
 	t.Run("returns error for non-Git directory", func(t *testing.T) {
 		tmp := t.TempDir()
-		_, err := gitutil.ListGitFilesUnder(tmp)
+		_, err := gitutil.ListGitTrackedFiles(tmp)
 		assert.Error(t, err)
 	})
 }
@@ -100,7 +100,7 @@ func TestRenderFileContent_RejectsDirectory(t *testing.T) {
 		dir := t.TempDir()
 		var buf bytes.Buffer
 
-		err := fileview.RenderFileContent(dir, &buf, 0)
+		err := fileview.FileViewWithLines(dir, &buf, 0)
 		assert.ErrorContains(t, err, "cannot render directory as file")
 	})
 }

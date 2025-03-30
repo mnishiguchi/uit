@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-// FindGitRoot returns the absolute path of the Git repository root for the given path.
-func FindGitRoot(path string) (string, error) {
+// GetGitRoot returns the absolute path of the Git repository root for the given path.
+func GetGitRoot(path string) (string, error) {
 	cmd := exec.Command("git", "-C", path, "rev-parse", "--show-toplevel")
 	output, err := cmd.Output()
 	if err != nil {
@@ -18,8 +18,8 @@ func FindGitRoot(path string) (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
-// ListGitFilesUnder returns a list of Git-tracked files under a given directory.
-func ListGitFilesUnder(dir string) ([]string, error) {
+// ListGitTrackedFiles returns a list of Git-tracked files under a given directory.
+func ListGitTrackedFiles(dir string) ([]string, error) {
 	cmd := exec.Command("git", "-C", dir, "ls-files")
 	output, err := cmd.Output()
 	if err != nil {

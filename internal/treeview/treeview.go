@@ -18,25 +18,25 @@ type TreeNode struct {
 	Children map[string]*TreeNode
 }
 
-// RenderGitTree builds and prints a Git-tracked file tree starting from the user-specified path.
-func RenderGitTree(inputPath string, w io.Writer) error {
-	tree, err := buildGitTree(inputPath)
+// TreeViewFromGit builds and prints a Git-tracked file tree starting from the user-specified path.
+func TreeViewFromGit(inputPath string, w io.Writer) error {
+	tree, err := buildTreeFromGit(inputPath)
 	if err != nil {
 		return err
 	}
 
-	printTree(tree, w)
+	printTreeRoot(tree, w)
 
 	return nil
 }
 
-func buildGitTree(inputPath string) (*TreeNode, error) {
+func buildTreeFromGit(inputPath string) (*TreeNode, error) {
 	absInput, err := filepath.Abs(inputPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve input path: %w", err)
 	}
 
-	gitRoot, err := gitutil.FindGitRoot(absInput)
+	gitRoot, err := gitutil.GetGitRoot(absInput)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find git root: %w", err)
 	}
@@ -68,14 +68,14 @@ func buildGitTree(inputPath string) (*TreeNode, error) {
 	}
 
 	for _, parts := range relevantPaths {
-		addPath(root, parts)
+		insertPathParts(root, parts)
 	}
 
 	return root, nil
 }
 
-// addPath inserts a file path (split into parts) into the tree recursively.
-func addPath(node *TreeNode, parts []string) {
+// insertPathParts inserts a file path (split into parts) into the tree recursively.
+func insertPathParts(node *TreeNode, parts []string) {
 	if len(parts) == 0 {
 		return
 	}
@@ -91,17 +91,17 @@ func addPath(node *TreeNode, parts []string) {
 		node.Children[name] = child
 	}
 
-	addPath(child, parts[1:])
+	insertPathParts(child, parts[1:])
 }
 
-// printTree prints the tree starting from the root node.
-func printTree(node *TreeNode, w io.Writer) {
+// printTreeRoot prints the tree starting from the root node.
+func printTreeRoot(node *TreeNode, w io.Writer) {
 	fmt.Fprintf(w, "%s\n", node.Name)
-	printChildren(node, "", true, w)
+	printTreeChildren(node, "", true, w)
 }
 
-// printChildren prints child nodes of the given tree node recursively.
-func printChildren(node *TreeNode, prefix string, isLast bool, w io.Writer) {
+// printTreeChildren prints child nodes of the given tree node recursively.
+func printTreeChildren(node *TreeNode, prefix string, isLast bool, w io.Writer) {
 	_ = isLast // Reserved for future enhancements
 
 	var keys []string
@@ -123,7 +123,7 @@ func printChildren(node *TreeNode, prefix string, isLast bool, w io.Writer) {
 		fmt.Fprintf(w, "%s%s %s\n", prefix, connector, child.Name)
 
 		if !child.IsFile {
-			printChildren(child, nextPrefix, i == len(keys)-1, w)
+			printTreeChildren(child, nextPrefix, i == len(keys)-1, w)
 		}
 	}
 }
