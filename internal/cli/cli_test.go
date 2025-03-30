@@ -9,9 +9,10 @@ import (
 	"testing"
 
 	"github.com/atotto/clipboard"
-	"github.com/mnishiguchi/command-line-go/uit/internal/cli"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mnishiguchi/command-line-go/uit/internal/cli"
 )
 
 var updateGolden = flag.Bool("update", false, "update golden files")
@@ -59,7 +60,7 @@ func TestRun(t *testing.T) {
 			goldenFile := filepath.Join("testdata", "golden", label)
 
 			var buf bytes.Buffer
-			err := cli.Run(
+			err := cli.Execute(
 				inputDir,
 				tt.maxLines,
 				tt.noTree,
@@ -112,7 +113,7 @@ func TestCopyConfirmationMessage(t *testing.T) {
 		done <- buf.String()
 	}()
 
-	err = cli.Run(
+	err = cli.Execute(
 		inputDir,
 		500,   // maxLines
 		false, // noTree

@@ -10,10 +10,11 @@ import (
 	"strings"
 
 	"github.com/atotto/clipboard"
+	"github.com/urfave/cli/v2"
+
 	"github.com/mnishiguchi/command-line-go/uit/internal/fileview"
 	"github.com/mnishiguchi/command-line-go/uit/internal/gitutil"
 	"github.com/mnishiguchi/command-line-go/uit/internal/treeview"
-	"github.com/urfave/cli/v2"
 )
 
 // NewApp returns a CLI app instance for uit.
@@ -44,7 +45,7 @@ func NewApp(version string) *cli.App {
 			},
 			&cli.BoolFlag{
 				Name:  "copy",
-				Usage: "copy output to clipboard instead of printing",
+				Usage: "copy output to clipboard",
 			},
 			&cli.BoolFlag{
 				Name:  "fzf",
@@ -61,7 +62,7 @@ func NewApp(version string) *cli.App {
 				inputPath = c.Args().First()
 			}
 
-			return Run(
+			return Execute(
 				inputPath,
 				c.Int("max-lines"),
 				c.Bool("no-tree"),
@@ -75,8 +76,7 @@ func NewApp(version string) *cli.App {
 	}
 }
 
-// Run executes the main logic using the given config.
-func Run(
+func Execute(
 	inputPath string,
 	maxLines int,
 	noTree bool,
@@ -87,102 +87,116 @@ func Run(
 	writer io.Writer,
 ) error {
 	var clipboardBuf bytes.Buffer
-
-	// Multi-writer sends output to both terminal/test and clipboard buffer
 	out := io.MultiWriter(writer, &clipboardBuf)
 
-	// Print Git-aware tree structure rooted at given path
 	if !noTree {
 		if err := treeview.TreeViewFromGit(inputPath, out); err == nil {
-			// Two blank lines after tree if tree was printed
 			fmt.Fprintln(out)
 			fmt.Fprintln(out)
 		}
 	}
 
-	// Skip file content rendering entirely
 	if noContent {
-		return outputResult(clipboardBuf, copyToClipboard)
+		return finalizeOutput(clipboardBuf, copyToClipboard)
 	}
 
-	// Check if the input path is a file or directory
-	info, err := os.Stat(inputPath)
+	if err := renderFiles(inputPath, maxLines, useFZF, filterPattern, out); err != nil {
+		return err
+	}
+
+	return finalizeOutput(clipboardBuf, copyToClipboard)
+}
+
+func renderFiles(path string, maxLines int, useFZF bool, filter string, out io.Writer) error {
+	info, err := os.Stat(path)
 	if err != nil {
 		return fmt.Errorf("invalid path: %w", err)
 	}
 
-	if info.IsDir() {
-		// List Git-tracked files under the directory
-		files, err := gitutil.ListGitTrackedFiles(inputPath)
+	if !info.IsDir() {
+		if err := fileview.FileViewWithLines(path, out, maxLines); err != nil {
+			return fmt.Errorf("failed to render file %s: %w", path, err)
+		}
+		return nil
+	}
+
+	files, err := listGitFiles(path)
+	if err != nil {
+		return err
+	}
+
+	files = filterFiles(files, filter)
+
+	if useFZF && isFZFInstalled() {
+		files, err = selectFilesWithFZF(files)
 		if err != nil {
-			if strings.Contains(err.Error(), "not a Git repository") {
-				return fmt.Errorf("this directory is not inside a Git repository: %s", inputPath)
-			}
-			return fmt.Errorf("failed to list files: %w", err)
-		}
-
-		if len(files) == 0 {
-			return fmt.Errorf("no Git-tracked files found in: %s", inputPath)
-		}
-
-		// If --filter is provided, filter file paths
-		if filterPattern != "" {
-			re, err := regexp.Compile(filterPattern)
-			if err != nil {
-				return fmt.Errorf("invalid regex pattern: %w", err)
-			}
-
-			var filtered []string
-			for _, f := range files {
-				if re.MatchString(f) {
-					filtered = append(filtered, f)
-				}
-			}
-
-			files = filtered
-		}
-
-		// If --fzf is enabled and fzf is available, let the user interactively select files
-		if useFZF && isFZFInstalled() {
-			files, err = selectFilesWithFZF(files)
-			if err != nil {
-				return err
-			}
-		}
-
-		for _, f := range files {
-			if err := fileview.FileViewWithLines(f, out, maxLines); err != nil {
-				return fmt.Errorf("failed to render file %s: %w", f, err)
-			}
-		}
-	} else {
-		// Render a single file
-		if err := fileview.FileViewWithLines(inputPath, out, maxLines); err != nil {
-			return fmt.Errorf("failed to render file %s: %w", inputPath, err)
+			return err
 		}
 	}
 
-	return outputResult(clipboardBuf, copyToClipboard)
-}
-
-// outputResult handles writing the final output, either to stdout or clipboard.
-func outputResult(buf bytes.Buffer, copyToClipboard bool) error {
-	if copyToClipboard {
-		if err := clipboard.WriteAll(buf.String()); err != nil {
-			return fmt.Errorf("failed to copy to clipboard: %w", err)
+	for _, f := range files {
+		if err := fileview.FileViewWithLines(f, out, maxLines); err != nil {
+			return fmt.Errorf("failed to render file %s: %w", f, err)
 		}
-		fmt.Fprintln(os.Stderr, "✔️ Copied to clipboard.")
 	}
+
 	return nil
 }
 
-// isFZFInstalled checks if fzf is available in PATH.
+func listGitFiles(path string) ([]string, error) {
+	files, err := gitutil.ListGitTrackedFiles(path)
+	if err != nil {
+		if strings.Contains(err.Error(), "not a Git repository") {
+			return nil, fmt.Errorf("this directory is not inside a Git repository: %s", path)
+		}
+
+		return nil, fmt.Errorf("failed to list files: %w", err)
+	}
+
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no Git-tracked files found in: %s", path)
+	}
+
+	return files, nil
+}
+
+func filterFiles(files []string, pattern string) []string {
+	if pattern == "" {
+		return files
+	}
+
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return []string{} // Or log invalid regex warning?
+	}
+
+	var filtered []string
+	for _, f := range files {
+		if re.MatchString(f) {
+			filtered = append(filtered, f)
+		}
+	}
+
+	return filtered
+}
+
+func finalizeOutput(buf bytes.Buffer, enabled bool) error {
+	if enabled {
+		if err := clipboard.WriteAll(buf.String()); err != nil {
+			return fmt.Errorf("failed to copy to clipboard: %w", err)
+		}
+
+		fmt.Fprintln(os.Stderr, "✔️ Copied to clipboard.")
+	}
+
+	return nil
+}
+
 func isFZFInstalled() bool {
 	_, err := exec.LookPath("fzf")
 	return err == nil
 }
 
-// selectFilesWithFZF launches fzf with the given list of files and returns selected ones.
 func selectFilesWithFZF(files []string) ([]string, error) {
 	cmd := exec.Command("fzf", "--multi")
 	cmd.Stdin = strings.NewReader(strings.Join(files, "\n"))
@@ -193,5 +207,6 @@ func selectFilesWithFZF(files []string) ([]string, error) {
 	}
 
 	selection := strings.Split(strings.TrimSpace(string(out)), "\n")
+
 	return selection, nil
 }
