@@ -12,9 +12,9 @@ import (
 	"github.com/atotto/clipboard"
 	"github.com/urfave/cli/v2"
 
-	"github.com/mnishiguchi/command-line-go/uit/internal/fileview"
-	"github.com/mnishiguchi/command-line-go/uit/internal/gitutil"
-	"github.com/mnishiguchi/command-line-go/uit/internal/treeview"
+	"github.com/mnishiguchi/uit/internal/fileview"
+	"github.com/mnishiguchi/uit/internal/gitutil"
+	"github.com/mnishiguchi/uit/internal/treeview"
 )
 
 // NewApp returns a CLI app instance for uit.

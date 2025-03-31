@@ -1,4 +1,4 @@
-module github.com/mnishiguchi/command-line-go/uit
+module github.com/mnishiguchi/uit
 
 go 1.23.5
 

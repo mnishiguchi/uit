@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mnishiguchi/command-line-go/uit/internal/cli"
+	"github.com/mnishiguchi/uit/internal/cli"
 )
 
 var updateGolden = flag.Bool("update", false, "update golden files")

@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mnishiguchi/command-line-go/uit/internal/gitutil"
+	"github.com/mnishiguchi/uit/internal/gitutil"
 )
 
 // TreeNode represents a node in the directory tree.

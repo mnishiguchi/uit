@@ -6,10 +6,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mnishiguchi/command-line-go/uit/internal/fileview"
-	"github.com/mnishiguchi/command-line-go/uit/internal/gitutil"
-	"github.com/mnishiguchi/command-line-go/uit/internal/treeview"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/mnishiguchi/uit/internal/fileview"
+	"github.com/mnishiguchi/uit/internal/gitutil"
+	"github.com/mnishiguchi/uit/internal/treeview"
 )
 
 func TestRenderGitTree(t *testing.T) {

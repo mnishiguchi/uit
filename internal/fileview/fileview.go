@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mnishiguchi/command-line-go/uit/internal/gitutil"
+	"github.com/mnishiguchi/uit/internal/gitutil"
 )
 
 // FileViewWithLines prints the content of a single file to the writer with line numbers.

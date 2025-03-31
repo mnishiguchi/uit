@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mnishiguchi/command-line-go/uit/internal/cli"
+	"github.com/mnishiguchi/uit/internal/cli"
 )
 
 var version = "v-dev"
