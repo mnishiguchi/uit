@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -146,7 +147,7 @@ func renderFiles(path string, maxLines int, useFZF bool, filter string, out io.W
 func listGitFiles(path string) ([]string, error) {
 	files, err := gitutil.ListGitTrackedFiles(path)
 	if err != nil {
-		if strings.Contains(err.Error(), "not a Git repository") {
+		if errors.Is(err, gitutil.ErrNotGitRepo) {
 			return nil, fmt.Errorf("this directory is not inside a Git repository: %s", path)
 		}
 
