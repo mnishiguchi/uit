@@ -135,13 +135,14 @@ func renderFiles(path string, maxLines int, useFZF bool, filter string, out io.W
 		}
 	}
 
+	var errs []error
 	for _, f := range files {
 		if err := fileview.FileViewWithLines(f, out, maxLines); err != nil {
-			return fmt.Errorf("failed to render file %s: %w", f, err)
+			errs = append(errs, fmt.Errorf("failed to render file %s: %w", f, err))
 		}
 	}
 
-	return nil
+	return errors.Join(errs...)
 }
 
 func listGitFiles(path string) ([]string, error) {
