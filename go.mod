@@ -1,15 +1,15 @@
 module github.com/mnishiguchi/uit
 
-go 1.23.5
+go 1.24.2
 
 require (
+	github.com/atotto/clipboard v0.1.4
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.6
 )
 
 require (
-	github.com/atotto/clipboard v0.1.4 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.6 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
