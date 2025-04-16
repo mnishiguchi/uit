@@ -27,7 +27,11 @@ func FileViewWithLines(path string, w io.Writer, maxLines int) error {
 		return fmt.Errorf("cannot render directory as file: %s", absPath)
 	}
 
-	if isBin, err := isBinaryFile(absPath); err == nil && isBin {
+	isBin, err := isBinaryFile(absPath)
+	if err != nil {
+		return fmt.Errorf("failed to check if file is binary: %w", err)
+	}
+	if isBin {
 		printFileHeader(w, path)
 		fmt.Fprintln(w, "[binary file omitted]")
 		printFileFooter(w)
