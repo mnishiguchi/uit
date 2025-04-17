@@ -3,6 +3,7 @@ package cli_test
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -77,6 +78,7 @@ func TestRun(t *testing.T) {
 			if *updateGolden {
 				err := os.WriteFile(goldenFile, []byte(actual), 0644)
 				require.NoError(t, err)
+				fmt.Printf("🔃 Updated golden file: %s\n", goldenFile)
 			}
 
 			expected, err := os.ReadFile(goldenFile)
