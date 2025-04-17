@@ -104,7 +104,7 @@ func printTreeRoot(node *TreeNode, w io.Writer) {
 func printTreeChildren(node *TreeNode, prefix string, isLast bool, w io.Writer) {
 	_ = isLast // Reserved for future enhancements
 
-	var keys []string
+	keys := make([]string, 0, len(node.Children))
 	for k := range node.Children {
 		keys = append(keys, k)
 	}

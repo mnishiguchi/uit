@@ -172,7 +172,7 @@ func filterFiles(files []string, pattern string) []string {
 		return []string{} // Or log invalid regex warning?
 	}
 
-	var filtered []string
+	filtered := make([]string, 0, len(files))
 	for _, f := range files {
 		if re.MatchString(f) {
 			filtered = append(filtered, f)
